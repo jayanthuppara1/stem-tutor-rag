@@ -1,8 +1,8 @@
-fastapi==0.115.0
-uvicorn==0.30.6
-chromadb==0.5.5
-sentence-transformers==3.0.1
-anthropic==0.39.0
-pypdf==4.3.1
-python-multipart==0.0.9
-aiofiles==23.2.1
+fastapi
+uvicorn
+chromadb
+sentence-transformers
+anthropic
+pypdf
+python-multipart
+aiofiles
