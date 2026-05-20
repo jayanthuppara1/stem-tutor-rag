@@ -19,6 +19,8 @@ from typing import Optional
 import chromadb
 from anthropic import Anthropic
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
@@ -28,7 +30,7 @@ CHROMA_DIR = "chroma_db"
 COLLECTION_NAME = "stem_course_materials"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 TOP_K = 3                       # number of chunks to retrieve
-RELEVANCE_THRESHOLD = 1.2       # max distance to consider relevant (lower = more similar)
+RELEVANCE_THRESHOLD = 1.8       # max distance to consider relevant (lower = more similar)
 LLM_MODEL = "claude-sonnet-4-5"
 
 
@@ -69,14 +71,22 @@ class AnswerResponse(BaseModel):
     grounded: bool  # whether the answer used retrieved context
 
 
-@app.get("/")
-def root():
+@app.get("/health")
+def health():
     """Health check endpoint."""
     return {
         "status": "running",
         "service": "STEM Tutor RAG",
         "collection_size": collection.count()
     }
+
+@app.get("/")
+def root():
+    """Serve the frontend UI."""
+    return FileResponse("static/index.html")
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.post("/ask", response_model=AnswerResponse)
