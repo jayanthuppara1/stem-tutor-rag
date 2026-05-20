@@ -1,0 +1,45 @@
+Lecture 4: Introduction to Machine Learning
+
+Machine learning is a field of artificial intelligence that enables computers to learn patterns from data without being explicitly programmed. Instead of writing rules, you provide examples and the algorithm finds the patterns.
+
+Types of Machine Learning
+
+Supervised learning uses labeled data. You provide input-output pairs and the model learns to predict outputs from inputs. Examples include classification (predicting categories) and regression (predicting continuous values).
+
+Unsupervised learning uses unlabeled data. The algorithm finds structure in the data on its own. Examples include clustering (grouping similar items) and dimensionality reduction (compressing data while preserving information).
+
+Reinforcement learning involves an agent taking actions in an environment to maximize cumulative reward. The agent learns through trial and error. This is used in robotics, game playing, and recommendation systems.
+
+Common Algorithms
+
+Linear regression predicts a continuous value as a weighted sum of input features. It is the simplest regression algorithm and serves as the foundation for many others.
+
+Logistic regression, despite its name, is used for binary classification. It outputs a probability between 0 and 1 using the sigmoid function.
+
+Decision trees split the data into branches based on feature values. They are easy to interpret but prone to overfitting. Random forests combine many decision trees for better accuracy.
+
+K-Nearest Neighbors (KNN) classifies a point based on the majority class of its K closest neighbors in feature space. It is simple but computationally expensive for large datasets.
+
+Neural networks consist of layers of interconnected nodes. Each node applies a weighted sum followed by an activation function. Deep neural networks have many hidden layers and can learn complex patterns.
+
+Training and Evaluation
+
+To train a model, you split your data into training, validation, and test sets. The training set teaches the model. The validation set tunes hyperparameters. The test set evaluates final performance on unseen data.
+
+Common metrics for classification include accuracy, precision, recall, and F1 score. For regression, you use mean squared error (MSE), mean absolute error (MAE), or R-squared.
+
+Overfitting occurs when a model learns the training data too well, including its noise, and performs poorly on new data. Underfitting is when the model is too simple to capture the underlying pattern.
+
+Techniques to prevent overfitting include regularization (penalizing complex models), cross-validation (training on multiple subsets), early stopping (halting training when validation performance plateaus), and dropout (randomly disabling neurons during training).
+
+Feature Engineering
+
+Feature engineering is the process of transforming raw data into useful inputs for a model. Good features can dramatically improve model performance.
+
+Common techniques include normalization (scaling features to a common range), one-hot encoding (converting categorical variables to binary columns), and creating interaction features (combining existing features).
+
+The Curse of Dimensionality
+
+As the number of features grows, the data becomes increasingly sparse in the high-dimensional space. Distance-based algorithms become less effective. More data is needed to maintain statistical reliability.
+
+Dimensionality reduction techniques like Principal Component Analysis (PCA) help by projecting data into a lower-dimensional space while preserving most of the variance.

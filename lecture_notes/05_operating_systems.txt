@@ -1,0 +1,45 @@
+Lecture 5: Operating Systems Concepts
+
+An operating system (OS) is the software that manages computer hardware and provides services for application programs. It acts as an intermediary between users and the computer hardware.
+
+Processes and Threads
+
+A process is an instance of a running program. Each process has its own memory space, file handles, and system resources. Processes are isolated from each other, providing security and stability.
+
+A thread is a lightweight unit of execution within a process. Multiple threads in the same process share memory and resources. This makes communication between threads fast but also requires careful synchronization to avoid race conditions.
+
+The operating system uses a scheduler to decide which process or thread runs at any moment. Common scheduling algorithms include First Come First Served, Shortest Job First, Round Robin, and Priority Scheduling.
+
+Memory Management
+
+Modern operating systems use virtual memory to give each process the illusion of a large, private memory space. The OS maps virtual addresses to physical memory addresses using page tables.
+
+When physical memory is full, the OS swaps pages to disk. This is called paging. Excessive paging, known as thrashing, severely degrades performance.
+
+Memory allocation strategies include first-fit, best-fit, and worst-fit. The choice affects fragmentation and performance.
+
+File Systems
+
+A file system organizes how data is stored and retrieved on storage devices. Common file systems include NTFS (Windows), ext4 (Linux), and APFS (macOS).
+
+Files are organized in a hierarchical directory structure. Each file has metadata including name, size, permissions, and timestamps. The file system tracks which disk blocks belong to which file.
+
+Concurrency
+
+Concurrency is the ability of a system to handle multiple tasks simultaneously. Operating systems provide primitives for managing concurrent execution.
+
+Locks, semaphores, and mutexes prevent multiple threads from accessing shared resources at the same time. Without proper synchronization, you get race conditions where the outcome depends on timing.
+
+Deadlock occurs when two or more processes wait indefinitely for resources held by each other. The four conditions for deadlock are mutual exclusion, hold and wait, no preemption, and circular wait. Preventing any one of these prevents deadlock.
+
+Inter-Process Communication
+
+Processes need to communicate to coordinate work. The OS provides several mechanisms.
+
+Pipes allow data to flow from one process to another. Message queues allow asynchronous communication. Shared memory is the fastest method but requires synchronization. Sockets enable communication between processes on different machines.
+
+System Calls
+
+A system call is the interface between a user program and the operating system kernel. When a program needs to read a file, allocate memory, or create a process, it makes a system call.
+
+System calls involve a context switch from user mode to kernel mode, which has overhead. Modern languages and libraries provide higher-level abstractions over system calls.

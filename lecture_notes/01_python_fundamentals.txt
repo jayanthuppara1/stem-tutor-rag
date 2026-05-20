@@ -1,0 +1,40 @@
+Lecture 1: Python Fundamentals
+
+Python is a high-level, interpreted programming language known for its readability and versatility. It is widely used in web development, data science, machine learning, and automation.
+
+Variables and Data Types
+
+In Python, variables are created when you assign a value to them. You do not need to declare the type of a variable explicitly. Python uses dynamic typing, which means the type is determined at runtime.
+
+Common data types include:
+- Integer (int): whole numbers like 5, 100, -3
+- Float: decimal numbers like 3.14, 2.5
+- String (str): text in quotes like "hello"
+- Boolean (bool): True or False
+- List: ordered, mutable collection like [1, 2, 3]
+- Dictionary (dict): key-value pairs like {"name": "Alice", "age": 25}
+- Tuple: ordered, immutable collection like (1, 2, 3)
+
+Control Flow
+
+Python uses if, elif, and else statements for conditional logic. Indentation is significant in Python and defines code blocks. There is no curly brace syntax.
+
+Loops include the for loop, which iterates over sequences, and the while loop, which continues until a condition becomes false. The range function is commonly used with for loops to iterate a specific number of times.
+
+Functions
+
+Functions are defined using the def keyword. They can accept parameters and return values. Python supports default arguments, keyword arguments, and variable-length argument lists using *args and **kwargs.
+
+Functions in Python are first-class objects, meaning they can be passed as arguments to other functions, returned from functions, and assigned to variables. Lambda functions provide a way to define small anonymous functions inline.
+
+List Comprehensions
+
+List comprehensions provide a concise way to create lists. The syntax is [expression for item in iterable if condition]. They are often more readable and faster than equivalent for loops.
+
+For example, to create a list of squares of even numbers from 0 to 9, you would write: [x**2 for x in range(10) if x % 2 == 0]. This evaluates to [0, 4, 16, 36, 64].
+
+Exception Handling
+
+Python uses try, except, else, and finally blocks for exception handling. The try block contains code that might raise an exception. The except block handles specific exceptions. The else block runs if no exception occurred. The finally block always runs, useful for cleanup.
+
+Common exceptions include ValueError, TypeError, KeyError, IndexError, FileNotFoundError, and ZeroDivisionError.

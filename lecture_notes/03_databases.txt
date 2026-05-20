@@ -1,0 +1,45 @@
+Lecture 3: Database Systems
+
+A database is an organized collection of data that can be accessed, managed, and updated efficiently. Database management systems (DBMS) provide the software layer for interacting with databases.
+
+Relational Databases
+
+Relational databases organize data into tables with rows and columns. Each row represents a record, and each column represents an attribute. Tables can be related to each other through foreign keys.
+
+Popular relational databases include PostgreSQL, MySQL, SQL Server, and Oracle. They use SQL (Structured Query Language) for defining and manipulating data.
+
+SQL Basics
+
+SQL has several command categories. Data Definition Language (DDL) includes CREATE, ALTER, and DROP for managing schema. Data Manipulation Language (DML) includes SELECT, INSERT, UPDATE, and DELETE for working with data.
+
+The SELECT statement is the most commonly used. It retrieves data from one or more tables. The WHERE clause filters rows. The JOIN clause combines rows from multiple tables based on related columns.
+
+Common JOIN types include INNER JOIN (only matching rows), LEFT JOIN (all rows from left table), RIGHT JOIN (all rows from right table), and FULL OUTER JOIN (all rows from both tables).
+
+Normalization
+
+Database normalization is the process of organizing data to reduce redundancy and improve integrity. There are several normal forms.
+
+First Normal Form (1NF) requires each column to contain atomic values and each row to be unique. Second Normal Form (2NF) requires 1NF plus no partial dependencies on a composite key. Third Normal Form (3NF) requires 2NF plus no transitive dependencies.
+
+While normalization reduces redundancy, it can hurt query performance due to more joins. Denormalization is sometimes used in data warehouses for faster reads.
+
+Indexes
+
+An index is a data structure that improves the speed of data retrieval at the cost of additional storage and slower writes. Most databases use B-tree or B+ tree indexes.
+
+Without an index, finding a row requires a full table scan, which is O(n). With an index, lookups become O(log n). Indexes should be created on columns that are frequently used in WHERE clauses, JOIN conditions, or ORDER BY clauses.
+
+NoSQL Databases
+
+NoSQL databases handle unstructured or semi-structured data and scale horizontally. There are four main types.
+
+Document stores like MongoDB store JSON-like documents. Key-value stores like Redis are simple and extremely fast. Column-family stores like Cassandra handle large-scale distributed data. Graph databases like Neo4j model relationships explicitly.
+
+NoSQL databases sacrifice some ACID guarantees for scalability and flexibility. The choice between SQL and NoSQL depends on the use case, data structure, and scale requirements.
+
+ACID Properties
+
+ACID stands for Atomicity, Consistency, Isolation, and Durability. These are the four properties of a reliable database transaction.
+
+Atomicity means a transaction is all or nothing. Consistency means the database remains in a valid state. Isolation means concurrent transactions do not interfere. Durability means committed transactions persist even after system failures.

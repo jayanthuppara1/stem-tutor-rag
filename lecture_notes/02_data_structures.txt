@@ -1,0 +1,47 @@
+Lecture 2: Data Structures and Algorithms
+
+Data structures are ways of organizing and storing data so that operations can be performed efficiently. Algorithms are step-by-step procedures for solving problems. Together they form the foundation of computer science.
+
+Arrays and Lists
+
+An array is a contiguous block of memory storing elements of the same type. Access by index is constant time, O(1). Insertion and deletion in the middle are linear time, O(n), because elements must be shifted.
+
+Python lists are dynamic arrays. They can grow and shrink at runtime. Appending to the end is amortized O(1), but inserting at the beginning is O(n).
+
+Linked Lists
+
+A linked list is a chain of nodes where each node contains data and a reference to the next node. Singly linked lists go one direction. Doubly linked lists have references to both next and previous nodes.
+
+Insertion and deletion at known positions is O(1). However, accessing an element by index requires traversal, making it O(n). Linked lists are useful when frequent insertions and deletions are needed and random access is not required.
+
+Stacks and Queues
+
+A stack is a Last In First Out (LIFO) structure. The two main operations are push (add to top) and pop (remove from top). Stacks are used for function call management, undo operations, and parsing.
+
+A queue is a First In First Out (FIFO) structure. Enqueue adds to the back, dequeue removes from the front. Queues are used in scheduling, breadth-first search, and message passing systems.
+
+Hash Tables
+
+A hash table maps keys to values using a hash function. The average time complexity for insertion, deletion, and lookup is O(1). In the worst case, with many collisions, it can degrade to O(n).
+
+Python dictionaries are implemented as hash tables. They are extremely fast for lookups and are one of the most commonly used data structures in real-world programming.
+
+Trees
+
+A tree is a hierarchical structure with a root node and child nodes. Binary trees have at most two children per node. Binary search trees maintain order, where left children are smaller than the parent and right children are larger.
+
+Balanced trees like AVL trees and red-black trees guarantee O(log n) operations by keeping the tree height balanced. Trees are used in databases, file systems, and decision-making algorithms.
+
+Searching Algorithms
+
+Linear search checks each element one by one until the target is found. It runs in O(n) time and works on any list.
+
+Binary search requires a sorted list. It repeatedly divides the search interval in half, achieving O(log n) time complexity. It is much faster than linear search for large datasets but only works on sorted data.
+
+Sorting Algorithms
+
+Bubble sort has O(n squared) time complexity and is mainly used for teaching. Quick sort has average O(n log n) but worst case O(n squared). Merge sort guarantees O(n log n) but uses O(n) extra space. Python's built-in sort uses Timsort, a hybrid algorithm with O(n log n) performance and excellent real-world behavior.
+
+Big O Notation
+
+Big O notation describes the upper bound of an algorithm's growth rate. It tells you how the running time or space requirements scale as input size increases. Common complexities from best to worst are O(1), O(log n), O(n), O(n log n), O(n squared), O(2 to the n), and O(n factorial).
