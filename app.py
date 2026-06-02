@@ -4,6 +4,7 @@ app.py — Query pipeline using Anthropic embeddings (no torch needed).
 
 import os
 import hashlib
+from typing import Optional
 import chromadb
 from anthropic import Anthropic
 from fastapi import FastAPI, HTTPException
@@ -23,8 +24,7 @@ print("Connecting to ChromaDB...")
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
 collection = chroma_client.get_collection(name=COLLECTION_NAME)
 
-print("Initializing Anthropic client...")
-anthropic_client = Anthropic()
+anthropic_client: Optional[Anthropic] = None
 
 def get_embedding(text: str) -> list[float]:
     """Hash-based embedding — consistent and lightweight."""
@@ -49,6 +49,30 @@ class AnswerResponse(BaseModel):
     answer: str
     sources: list[SourceChunk]
     grounded: bool
+
+def get_anthropic_client() -> Optional[Anthropic]:
+    """Create the Anthropic client only when an answer actually needs it."""
+    global anthropic_client
+    if anthropic_client is not None:
+        return anthropic_client
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        return None
+    anthropic_client = Anthropic()
+    return anthropic_client
+
+def fallback_answer(question: str, retrieved_chunks: list[str], metadatas: list[dict]) -> str:
+    source_names = sorted({meta["source"] for meta in metadatas})
+    best_excerpt = retrieved_chunks[0].strip()
+    if len(best_excerpt) > 700:
+        best_excerpt = best_excerpt[:700].rsplit(" ", 1)[0] + "..."
+
+    return (
+        "I found relevant course material, but the hosted LLM is not configured for this deployment yet. "
+        "Here is the most relevant excerpt from the lecture notes:\n\n"
+        f"{best_excerpt}\n\n"
+        f"Sources: {', '.join(source_names)}\n\n"
+        "Add ANTHROPIC_API_KEY in Vercel to enable full generated tutoring answers."
+    )
 
 @app.get("/health")
 def health():
@@ -92,16 +116,21 @@ def ask_question(request: QuestionRequest):
         "Be concise and educational."
     )
 
-    response = anthropic_client.messages.create(
-        model=LLM_MODEL,
-        max_tokens=1024,
-        system=system_prompt,
-        messages=[{"role": "user", "content": f"Course material:\n\n{context_text}\n\nQuestion: {question}"}]
-    )
+    client = get_anthropic_client()
+    if client is None:
+        answer = fallback_answer(question, retrieved_chunks, metadatas)
+    else:
+        response = client.messages.create(
+            model=LLM_MODEL,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": f"Course material:\n\n{context_text}\n\nQuestion: {question}"}]
+        )
+        answer = response.content[0].text
 
     sources = [
         SourceChunk(source=meta["source"], text=chunk[:200], distance=float(dist))
         for chunk, meta, dist in zip(retrieved_chunks, metadatas, distances)
     ]
 
-    return AnswerResponse(answer=response.content[0].text, sources=sources, grounded=True)
+    return AnswerResponse(answer=answer, sources=sources, grounded=True)
