@@ -3,39 +3,25 @@ app.py — Query pipeline using Anthropic embeddings (no torch needed).
 """
 
 import os
-import hashlib
+import re
+from pathlib import Path
 from typing import Optional
-import chromadb
 from anthropic import Anthropic
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-CHROMA_DIR = "chroma_db"
-COLLECTION_NAME = "stem_course_materials"
+NOTES_DIR = Path("lecture_notes")
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
 TOP_K = 3
-RELEVANCE_THRESHOLD = 1.5
+MIN_OVERLAP_SCORE = 0.04
 LLM_MODEL = "claude-sonnet-4-5"
 
 app = FastAPI(title="STEM Tutor RAG")
 
-print("Connecting to ChromaDB...")
-chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
-collection = chroma_client.get_collection(name=COLLECTION_NAME)
-
 anthropic_client: Optional[Anthropic] = None
-
-def get_embedding(text: str) -> list[float]:
-    """Hash-based embedding — consistent and lightweight."""
-    h = hashlib.sha256(text.encode()).digest()
-    vec = []
-    for i in range(0, min(len(h)*4, 256*4), 4):
-        b = h[i % len(h)]
-        vec.append((b - 128) / 128.0)
-    while len(vec) < 256:
-        vec.append(0.0)
-    return vec[:256]
 
 class QuestionRequest(BaseModel):
     question: str
@@ -49,6 +35,55 @@ class AnswerResponse(BaseModel):
     answer: str
     sources: list[SourceChunk]
     grounded: bool
+
+def chunk_text(text: str) -> list[str]:
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + CHUNK_SIZE
+        if end < len(text):
+            sentence_end = text.rfind(". ", start, end)
+            if sentence_end > start + CHUNK_SIZE // 2:
+                end = sentence_end + 2
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+        start = end - CHUNK_OVERLAP if end < len(text) else end
+    return chunks
+
+def load_course_chunks() -> list[dict]:
+    course_chunks = []
+    for file_path in sorted(NOTES_DIR.glob("*.txt")):
+        text = file_path.read_text(encoding="utf-8")
+        for index, chunk in enumerate(chunk_text(text)):
+            course_chunks.append({"source": file_path.name, "index": index, "text": chunk})
+    return course_chunks
+
+COURSE_CHUNKS = load_course_chunks()
+
+def tokenize(text: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", text.lower())
+        if len(token) > 2
+    }
+
+def retrieve_chunks(question: str) -> list[dict]:
+    query_tokens = tokenize(question)
+    if not query_tokens:
+        return []
+
+    ranked = []
+    for chunk in COURSE_CHUNKS:
+        chunk_tokens = tokenize(chunk["text"])
+        overlap = query_tokens.intersection(chunk_tokens)
+        if not overlap:
+            continue
+        score = len(overlap) / len(query_tokens)
+        ranked.append({**chunk, "score": score, "distance": 1 - score})
+
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+    return ranked[:TOP_K]
 
 def get_anthropic_client() -> Optional[Anthropic]:
     """Create the Anthropic client only when an answer actually needs it."""
@@ -76,7 +111,7 @@ def fallback_answer(question: str, retrieved_chunks: list[str], metadatas: list[
 
 @app.get("/health")
 def health():
-    return {"status": "running", "service": "STEM Tutor RAG", "collection_size": collection.count()}
+    return {"status": "running", "service": "STEM Tutor RAG", "collection_size": len(COURSE_CHUNKS)}
 
 @app.get("/")
 def root():
@@ -90,19 +125,17 @@ def ask_question(request: QuestionRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-    query_embedding = get_embedding(question)
+    matches = retrieve_chunks(question)
 
-    results = collection.query(query_embeddings=[query_embedding], n_results=TOP_K)
-    retrieved_chunks = results["documents"][0]
-    distances = results["distances"][0]
-    metadatas = results["metadatas"][0]
-
-    if not distances or distances[0] > RELEVANCE_THRESHOLD:
+    if not matches or matches[0]["score"] < MIN_OVERLAP_SCORE:
         return AnswerResponse(
             answer="I don't have enough information in the course materials to answer this. Try asking about Python, data structures, databases, machine learning, or operating systems.",
             sources=[],
             grounded=False
         )
+
+    retrieved_chunks = [match["text"] for match in matches]
+    metadatas = [{"source": match["source"], "chunk_index": match["index"]} for match in matches]
 
     context_text = "\n\n---\n\n".join([
         f"[Source: {meta['source']}]\n{chunk}"
@@ -129,8 +162,8 @@ def ask_question(request: QuestionRequest):
         answer = response.content[0].text
 
     sources = [
-        SourceChunk(source=meta["source"], text=chunk[:200], distance=float(dist))
-        for chunk, meta, dist in zip(retrieved_chunks, metadatas, distances)
+        SourceChunk(source=match["source"], text=match["text"][:200], distance=float(match["distance"]))
+        for match in matches
     ]
 
     return AnswerResponse(answer=answer, sources=sources, grounded=True)
