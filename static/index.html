@@ -3,115 +3,827 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STEM Tutor — AI Study Assistant</title>
+<title>STEM Tutor RAG</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
-  header { padding: 20px 24px; border-bottom: 1px solid #1e2433; display: flex; align-items: center; gap: 12px; }
-  .logo { width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  header h1 { font-size: 18px; font-weight: 600; }
-  header span { font-size: 13px; color: #64748b; margin-left: 4px; }
-  .topics { display: flex; gap: 8px; padding: 16px 24px; border-bottom: 1px solid #1e2433; flex-wrap: wrap; align-items: center; }
-  .topic { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid #1e2433; color: #94a3b8; cursor: pointer; transition: all 0.15s; }
-  .topic:hover { border-color: #6366f1; color: #a5b4fc; }
-  .chat { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 800px; width: 100%; margin: 0 auto; }
-  .msg { display: flex; gap: 12px; align-items: flex-start; }
-  .msg.user { flex-direction: row-reverse; }
-  .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-  .avatar.ai { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
-  .avatar.user { background: #1e2433; }
-  .bubble { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
-  .bubble.ai { background: #1e2433; border: 1px solid #2d3748; border-radius: 2px 12px 12px 12px; }
-  .bubble.user { background: #6366f1; border-radius: 12px 2px 12px 12px; }
-  .sources { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2d3748; }
-  .sources-label { font-size: 11px; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .source-chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #0f1117; border: 1px solid #2d3748; color: #94a3b8; margin: 2px; }
-  .not-grounded { font-size: 12px; color: #f59e0b; margin-top: 8px; }
-  .input-area { padding: 16px 24px; border-top: 1px solid #1e2433; }
-  .input-row { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; }
-  input { flex: 1; background: #1e2433; border: 1px solid #2d3748; border-radius: 10px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.15s; }
-  input:focus { border-color: #6366f1; }
-  input::placeholder { color: #475569; }
-  button { background: #6366f1; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; cursor: pointer; transition: background 0.15s; }
-  button:hover { background: #5558e8; }
-  button:disabled { background: #2d3748; color: #64748b; cursor: not-allowed; }
-  .typing { display: flex; gap: 4px; padding: 12px 16px; background: #1e2433; border-radius: 2px 12px 12px 12px; border: 1px solid #2d3748; width: fit-content; }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; animation: bounce 1.2s infinite; }
-  .dot:nth-child(2) { animation-delay: 0.2s; }
-  .dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-  .welcome { text-align: center; padding: 48px 20px; color: #64748b; }
-  .welcome h2 { font-size: 22px; color: #94a3b8; margin-bottom: 10px; }
-  .welcome p { font-size: 14px; line-height: 1.6; }
+  :root {
+    color-scheme: light;
+    --bg: #f7f7f4;
+    --panel: #ffffff;
+    --panel-soft: #f0f2ef;
+    --line: #dedfd9;
+    --line-strong: #c9cbc2;
+    --text: #20231f;
+    --muted: #6b7068;
+    --faint: #8e948b;
+    --brand: #1f7a5a;
+    --brand-dark: #176044;
+    --brand-soft: #e1f2ea;
+    --warn: #a15c11;
+    --warn-soft: #fff3df;
+    --shadow: 0 18px 40px rgba(36, 42, 34, 0.09);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    min-width: 320px;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  button, input { font: inherit; }
+  button { border: 0; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 288px minmax(0, 1fr) 336px;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    border-right: 1px solid var(--line);
+    background: #fbfbf8;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .brand {
+    padding: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--text);
+    color: white;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .brand p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .new-chat {
+    width: 100%;
+    margin-top: 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 650;
+  }
+
+  .new-chat:hover, .course-button:hover, .project-button:hover, .prompt-chip:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  .side-section {
+    padding: 16px 12px 4px;
+  }
+
+  .side-label {
+    padding: 0 8px 8px;
+    font-size: 11px;
+    color: var(--faint);
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: .08em;
+  }
+
+  .course-button, .project-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    padding: 10px 8px;
+    text-align: left;
+  }
+
+  .course-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .course-copy, .project-copy {
+    min-width: 0;
+  }
+
+  .course-title, .project-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .course-meta, .project-meta {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .main {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: var(--panel);
+  }
+
+  .topbar {
+    height: 64px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 24px;
+  }
+
+  .topbar h2 {
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 0;
+  }
+
+  .topbar p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .status-pill {
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-dark);
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+
+  .chat {
+    overflow-y: auto;
+    padding: 28px 24px;
+  }
+
+  .chat-inner {
+    width: min(820px, 100%);
+    margin: 0 auto;
+  }
+
+  .welcome {
+    padding: 20px 0 10px;
+  }
+
+  .welcome h2 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .welcome p {
+    max-width: 620px;
+    margin: 10px 0 0;
+    color: var(--muted);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .prompt-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .prompt-chip {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    cursor: pointer;
+    color: var(--text);
+    min-height: 72px;
+    padding: 12px;
+    text-align: left;
+    box-shadow: 0 4px 16px rgba(31, 35, 30, .04);
+  }
+
+  .prompt-chip strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .prompt-chip span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .msg {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .msg.user {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 12px;
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+
+  .avatar.ai {
+    background: var(--text);
+    color: white;
+    border-color: var(--text);
+  }
+
+  .bubble {
+    width: fit-content;
+    max-width: min(680px, 100%);
+    border-radius: 8px;
+    padding: 13px 15px;
+    line-height: 1.65;
+    font-size: 14px;
+    white-space: pre-wrap;
+  }
+
+  .bubble.ai {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+  }
+
+  .bubble.user {
+    margin-left: auto;
+    background: var(--text);
+    color: white;
+  }
+
+  .source-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .source-chip {
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--muted);
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .not-grounded {
+    margin-top: 10px;
+    border: 1px solid #f0c98b;
+    border-radius: 8px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    padding: 9px 10px;
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .composer {
+    border-top: 1px solid var(--line);
+    padding: 16px 24px 20px;
+    background: rgba(255, 255, 255, .92);
+  }
+
+  .composer-inner {
+    width: min(820px, 100%);
+    margin: 0 auto;
+  }
+
+  .input-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--panel);
+    padding: 8px;
+    box-shadow: var(--shadow);
+  }
+
+  input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+
+  input::placeholder { color: var(--faint); }
+
+  .send {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .send:hover { background: var(--brand-dark); }
+  .send:disabled { background: var(--line-strong); cursor: not-allowed; }
+
+  .disclaimer {
+    margin: 8px 6px 0;
+    color: var(--faint);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .inspector {
+    min-height: 100vh;
+    border-left: 1px solid var(--line);
+    background: #fbfbf8;
+    padding: 18px;
+    overflow-y: auto;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .panel-head h3 {
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+
+  .panel-body { padding: 14px; }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .metric {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--panel-soft);
+  }
+
+  .metric strong {
+    display: block;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .metric span {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .source-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .source-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--panel-soft);
+  }
+
+  .source-card strong {
+    display: block;
+    font-size: 12px;
+  }
+
+  .source-card p {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .distance {
+    margin-top: 8px;
+    color: var(--faint);
+    font-size: 11px;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .typing {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    min-width: 64px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+    animation: bounce 1.2s infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: .2s; }
+  .dot:nth-child(3) { animation-delay: .4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 240px minmax(0, 1fr); }
+    .inspector { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .app { display: block; }
+    .sidebar { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .side-section { display: none; }
+    .brand { padding: 14px; }
+    .new-chat { margin-top: 12px; }
+    .main { min-height: calc(100vh - 116px); }
+    .topbar { height: auto; align-items: flex-start; padding: 14px; }
+    .status-pill { display: none; }
+    .chat { padding: 20px 14px; }
+    .welcome h2 { font-size: 24px; }
+    .prompt-grid { grid-template-columns: 1fr; }
+    .composer { padding: 12px 14px 16px; }
+    .bubble { max-width: 100%; }
+  }
 </style>
 </head>
 <body>
+<div class="app">
+  <aside class="sidebar" aria-label="Courses and projects">
+    <div class="brand">
+      <div class="brand-row">
+        <div class="brand-mark">ST</div>
+        <div>
+          <h1>STEM Tutor</h1>
+          <p>Course-grounded RAG assistant</p>
+        </div>
+      </div>
+      <button class="new-chat" type="button" onclick="resetChat()">New study chat</button>
+    </div>
 
-<header>
-  <div class="logo">🎓</div>
-  <div>
-    <h1>STEM Tutor <span>— RAG-powered study assistant</span></h1>
-  </div>
-</header>
+    <div class="side-section">
+      <div class="side-label">Courses</div>
+      <button class="course-button" type="button" onclick="ask('Explain Python list comprehensions with a short example.')">
+        <span class="course-dot" style="background:#3b82f6"></span>
+        <span class="course-copy"><span class="course-title">Python Fundamentals</span><span class="course-meta">variables, loops, functions</span></span>
+      </button>
+      <button class="course-button" type="button" onclick="ask('What is Big O notation and why does it matter?')">
+        <span class="course-dot" style="background:#1f7a5a"></span>
+        <span class="course-copy"><span class="course-title">Data Structures</span><span class="course-meta">arrays, stacks, queues</span></span>
+      </button>
+      <button class="course-button" type="button" onclick="ask('What are ACID properties in databases?')">
+        <span class="course-dot" style="background:#b45309"></span>
+        <span class="course-copy"><span class="course-title">Database Systems</span><span class="course-meta">SQL, joins, indexes</span></span>
+      </button>
+      <button class="course-button" type="button" onclick="ask('What is overfitting in machine learning?')">
+        <span class="course-dot" style="background:#7c3aed"></span>
+        <span class="course-copy"><span class="course-title">Machine Learning</span><span class="course-meta">models, training, metrics</span></span>
+      </button>
+      <button class="course-button" type="button" onclick="ask('What is a deadlock in operating systems?')">
+        <span class="course-dot" style="background:#be123c"></span>
+        <span class="course-copy"><span class="course-title">Operating Systems</span><span class="course-meta">threads, memory, files</span></span>
+      </button>
+    </div>
 
-<div class="topics">
-  <span style="font-size:12px;color:#64748b;padding:4px 0;margin-right:4px">Try:</span>
-  <div class="topic" onclick="ask('What is Big O notation?')">Big O notation</div>
-  <div class="topic" onclick="ask('How does a hash table work?')">Hash tables</div>
-  <div class="topic" onclick="ask('What is overfitting in machine learning?')">Overfitting</div>
-  <div class="topic" onclick="ask('What are ACID properties in databases?')">ACID properties</div>
-  <div class="topic" onclick="ask('What is a deadlock in operating systems?')">Deadlocks</div>
-  <div class="topic" onclick="ask('Explain list comprehensions in Python')">List comprehensions</div>
-  <div class="topic" onclick="ask('What is the difference between a stack and a queue?')">Stack vs Queue</div>
-</div>
+    <div class="side-section">
+      <div class="side-label">Projects</div>
+      <button class="project-button" type="button" onclick="ask('Help me compare stacks and queues for an implementation project.')">
+        <span class="project-copy"><span class="project-title">Algorithm Lab</span><span class="project-meta">implementation prep</span></span>
+      </button>
+      <button class="project-button" type="button" onclick="ask('How should I reason about SQL joins for a database assignment?')">
+        <span class="project-copy"><span class="project-title">SQL Review</span><span class="project-meta">query practice</span></span>
+      </button>
+      <button class="project-button" type="button" onclick="ask('Give me a study plan for the operating systems lecture material.')">
+        <span class="project-copy"><span class="project-title">Exam Sprint</span><span class="project-meta">guided review</span></span>
+      </button>
+    </div>
+  </aside>
 
-<div class="chat" id="chat">
-  <div class="welcome">
-    <h2>Ask me anything about your CS coursework</h2>
-    <p>I answer from actual lecture notes — not from memory.<br>
-    If the answer isn't in the materials, I'll tell you honestly.</p>
-  </div>
-</div>
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h2>Course Tutor</h2>
+        <p>Answers stay anchored to lecture-note retrieval.</p>
+      </div>
+      <div class="status-pill" id="grounded-status">Ready</div>
+    </header>
 
-<div class="input-area">
-  <div class="input-row">
-    <input id="q" type="text" placeholder="Ask about Python, algorithms, databases, ML, or operating systems..." onkeydown="if(event.key==='Enter')sendQ()">
-    <button id="btn" onclick="sendQ()">Ask →</button>
-  </div>
+    <section class="chat" id="chat" aria-live="polite">
+      <div class="chat-inner">
+        <div class="welcome" id="welcome">
+          <h2>What are you studying today?</h2>
+          <p>Ask about Python, algorithms, databases, machine learning, or operating systems. The tutor cites retrieved course material when it answers.</p>
+          <div class="prompt-grid">
+            <button class="prompt-chip" type="button" onclick="ask('What is the difference between a list and a tuple in Python?')">
+              <strong>Python check</strong>
+              <span>Compare list and tuple behavior.</span>
+            </button>
+            <button class="prompt-chip" type="button" onclick="ask('What is the difference between a stack and a queue?')">
+              <strong>Data structures</strong>
+              <span>Review LIFO and FIFO structures.</span>
+            </button>
+            <button class="prompt-chip" type="button" onclick="ask('Explain database normalization in simple terms.')">
+              <strong>Databases</strong>
+              <span>Summarize normalization tradeoffs.</span>
+            </button>
+            <button class="prompt-chip" type="button" onclick="ask('How do processes and threads differ?')">
+              <strong>Operating systems</strong>
+              <span>Clarify isolation and shared memory.</span>
+            </button>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+      </div>
+    </section>
+
+    <section class="composer">
+      <div class="composer-inner">
+        <div class="input-shell">
+          <input id="q" type="text" autocomplete="off" placeholder="Ask a course question..." onkeydown="if(event.key==='Enter')sendQ()">
+          <button class="send" id="btn" type="button" onclick="sendQ()" aria-label="Send question">&uarr;</button>
+        </div>
+        <div class="disclaimer">STEM Tutor can refuse questions that are outside the indexed course notes.</div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="inspector" aria-label="Retrieval details">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Study Workspace</h3>
+      </div>
+      <div class="panel-body">
+        <div class="metric-grid">
+          <div class="metric"><strong>5</strong><span>courses</span></div>
+          <div class="metric"><strong>3</strong><span>retrieved chunks</span></div>
+          <div class="metric"><strong>1.5</strong><span>threshold</span></div>
+          <div class="metric"><strong>RAG</strong><span>grounding mode</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Retrieved Sources</h3>
+        <span class="status-pill" id="source-count">0</span>
+      </div>
+      <div class="panel-body">
+        <div class="empty" id="source-empty">Source excerpts will appear after the first answer.</div>
+        <div class="source-list" id="source-list"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Course Materials</h3>
+      </div>
+      <div class="panel-body">
+        <div class="source-list">
+          <div class="source-card"><strong>01_python_fundamentals.txt</strong><p>Python syntax, data types, control flow, and functions.</p></div>
+          <div class="source-card"><strong>02_data_structures.txt</strong><p>Lists, linked lists, stacks, queues, hash tables, and Big O.</p></div>
+          <div class="source-card"><strong>03_databases.txt</strong><p>SQL, joins, normalization, indexes, and transactions.</p></div>
+          <div class="source-card"><strong>04_machine_learning.txt</strong><p>Supervised learning, algorithms, training, and evaluation.</p></div>
+          <div class="source-card"><strong>05_operating_systems.txt</strong><p>Processes, threads, memory management, file systems, and concurrency.</p></div>
+        </div>
+      </div>
+    </section>
+  </aside>
 </div>
 
 <script>
+const chat = document.getElementById('chat');
+const messages = document.getElementById('messages');
+const welcome = document.getElementById('welcome');
+const input = document.getElementById('q');
+const btn = document.getElementById('btn');
+const groundedStatus = document.getElementById('grounded-status');
+const sourceCount = document.getElementById('source-count');
+const sourceEmpty = document.getElementById('source-empty');
+const sourceList = document.getElementById('source-list');
+
 function ask(q) {
-  document.getElementById('q').value = q;
+  input.value = q;
   sendQ();
 }
 
+function resetChat() {
+  messages.innerHTML = '';
+  sourceList.innerHTML = '';
+  sourceEmpty.style.display = 'block';
+  sourceCount.textContent = '0';
+  groundedStatus.textContent = 'Ready';
+  groundedStatus.style.background = 'var(--brand-soft)';
+  groundedStatus.style.color = 'var(--brand-dark)';
+  welcome.style.display = 'block';
+  input.value = '';
+  input.focus();
+}
+
+function appendMessage(role, text, options = {}) {
+  const row = document.createElement('div');
+  row.className = role === 'user' ? 'msg user' : 'msg';
+
+  const avatar = document.createElement('div');
+  avatar.className = role === 'user' ? 'avatar user' : 'avatar ai';
+  avatar.textContent = role === 'user' ? 'YOU' : 'AI';
+
+  const bubble = document.createElement('div');
+  bubble.className = role === 'user' ? 'bubble user' : 'bubble ai';
+  bubble.textContent = text;
+
+  if (options.sources && options.sources.length) {
+    const sourceRow = document.createElement('div');
+    sourceRow.className = 'source-row';
+    [...new Set(options.sources.map((source) => source.source))].forEach((name) => {
+      const chip = document.createElement('span');
+      chip.className = 'source-chip';
+      chip.textContent = name;
+      sourceRow.appendChild(chip);
+    });
+    bubble.appendChild(sourceRow);
+  }
+
+  if (options.grounded === false) {
+    const warning = document.createElement('div');
+    warning.className = 'not-grounded';
+    warning.textContent = 'This question was outside the retrieved course material.';
+    bubble.appendChild(warning);
+  }
+
+  if (role === 'user') {
+    row.appendChild(bubble);
+    row.appendChild(avatar);
+  } else {
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+  }
+
+  messages.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return row;
+}
+
+function appendTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar ai';
+  avatar.textContent = 'AI';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ai typing';
+  for (let i = 0; i < 3; i += 1) {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    bubble.appendChild(dot);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  messages.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return row;
+}
+
+function updateSources(data) {
+  sourceList.innerHTML = '';
+  const sources = data.sources || [];
+  sourceCount.textContent = String(sources.length);
+  sourceEmpty.style.display = sources.length ? 'none' : 'block';
+
+  sources.forEach((source) => {
+    const card = document.createElement('div');
+    card.className = 'source-card';
+
+    const title = document.createElement('strong');
+    title.textContent = source.source;
+
+    const text = document.createElement('p');
+    text.textContent = source.text;
+
+    const distance = document.createElement('div');
+    distance.className = 'distance';
+    distance.textContent = `distance ${Number(source.distance).toFixed(3)}`;
+
+    card.appendChild(title);
+    card.appendChild(text);
+    card.appendChild(distance);
+    sourceList.appendChild(card);
+  });
+
+  groundedStatus.textContent = data.grounded ? 'Grounded' : 'Not found';
+  groundedStatus.style.background = data.grounded ? 'var(--brand-soft)' : 'var(--warn-soft)';
+  groundedStatus.style.color = data.grounded ? 'var(--brand-dark)' : 'var(--warn)';
+}
+
 async function sendQ() {
-  const input = document.getElementById('q');
-  const btn = document.getElementById('btn');
-  const chat = document.getElementById('chat');
   const question = input.value.trim();
   if (!question) return;
 
-  const welcome = chat.querySelector('.welcome');
-  if (welcome) welcome.remove();
-
-  chat.innerHTML += `
-    <div class="msg user">
-      <div class="avatar user">👤</div>
-      <div class="bubble user">${question}</div>
-    </div>`;
-
+  welcome.style.display = 'none';
+  appendMessage('user', question);
   input.value = '';
   btn.disabled = true;
+  groundedStatus.textContent = 'Retrieving';
 
-  const typingId = 'typing-' + Date.now();
-  chat.innerHTML += `
-    <div class="msg" id="${typingId}">
-      <div class="avatar ai">🤖</div>
-      <div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-    </div>`;
-  chat.scrollTop = chat.scrollHeight;
+  const typing = appendTyping();
 
   try {
     const res = await fetch('/ask', {
@@ -119,46 +831,27 @@ async function sendQ() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question })
     });
+
     const data = await res.json();
+    typing.remove();
 
-    document.getElementById(typingId)?.remove();
-
-    let sourcesHtml = '';
-    if (data.sources && data.sources.length > 0) {
-      const unique = [...new Set(data.sources.map(s => s.source))];
-      sourcesHtml = `
-        <div class="sources">
-          <div class="sources-label">Sources used</div>
-          ${unique.map(s => `<span class="source-chip">📄 ${s}</span>`).join('')}
-        </div>`;
+    if (!res.ok) {
+      throw new Error(data.detail || 'Request failed');
     }
 
-    const notGrounded = !data.grounded
-      ? `<div class="not-grounded">⚠️ This topic wasn't found in the course materials</div>`
-      : '';
-
-    chat.innerHTML += `
-      <div class="msg">
-        <div class="avatar ai">🤖</div>
-        <div class="bubble ai">
-          ${data.answer.replace(/\n/g, '<br>')}
-          ${sourcesHtml}
-          ${notGrounded}
-        </div>
-      </div>`;
-
-  } catch(e) {
-    document.getElementById(typingId)?.remove();
-    chat.innerHTML += `
-      <div class="msg">
-        <div class="avatar ai">🤖</div>
-        <div class="bubble ai" style="color:#f87171">Something went wrong. Please try again.</div>
-      </div>`;
+    appendMessage('assistant', data.answer, { sources: data.sources || [], grounded: data.grounded });
+    updateSources(data);
+  } catch (error) {
+    typing.remove();
+    groundedStatus.textContent = 'Error';
+    groundedStatus.style.background = 'var(--warn-soft)';
+    groundedStatus.style.color = 'var(--warn)';
+    appendMessage('assistant', 'Something went wrong. Please try again.');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+    chat.scrollTop = chat.scrollHeight;
   }
-
-  btn.disabled = false;
-  chat.scrollTop = chat.scrollHeight;
-  input.focus();
 }
 </script>
 </body>
