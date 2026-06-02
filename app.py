@@ -18,6 +18,10 @@ CHUNK_OVERLAP = 50
 TOP_K = 3
 MIN_OVERLAP_SCORE = 0.04
 LLM_MODEL = "claude-sonnet-4-5"
+STOP_WORDS = {
+    "about", "and", "are", "between", "does", "for", "from", "how", "into",
+    "the", "this", "what", "when", "where", "why", "with"
+}
 
 app = FastAPI(title="STEM Tutor RAG")
 
@@ -65,7 +69,7 @@ def tokenize(text: str) -> set[str]:
     return {
         token
         for token in re.findall(r"[a-z0-9]+", text.lower())
-        if len(token) > 2
+        if len(token) > 2 and token not in STOP_WORDS
     }
 
 def retrieve_chunks(question: str) -> list[dict]:
